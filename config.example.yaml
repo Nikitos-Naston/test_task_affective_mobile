@@ -1,0 +1,13 @@
+env: local
+http:
+  port: 8080
+log:
+  level: debug
+db:
+  host: localhost
+  port: 5432
+  user: subscriptions
+  password: subscriptions
+  name: subscriptions
+  ssl_mode: disable
+  # dsn: postgres://subscriptions:subscriptions@localhost:5432/subscriptions?sslmode=disable

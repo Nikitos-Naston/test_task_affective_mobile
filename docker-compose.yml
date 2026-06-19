@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: subscriptions-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-subscriptions}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-subscriptions}
+      POSTGRES_DB: ${DB_NAME:-subscriptions}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-subscriptions} -d ${DB_NAME:-subscriptions}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrator:
+    image: migrate/migrate:v4.17.1
+    container_name: subscriptions-migrator
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      [
+        "-path=/migrations",
+        "-database=postgres://${DB_USER:-subscriptions}:${DB_PASSWORD:-subscriptions}@db:5432/${DB_NAME:-subscriptions}?sslmode=disable",
+        "up"
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    container_name: subscriptions-api
+    environment:
+      APP_ENV: local
+      HTTP_PORT: 8080
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-subscriptions}
+      DB_PASSWORD: ${DB_PASSWORD:-subscriptions}
+      DB_NAME: ${DB_NAME:-subscriptions}
+      DB_SSLMODE: disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

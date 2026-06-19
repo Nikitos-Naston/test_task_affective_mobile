@@ -1,0 +1,8 @@
+.env
+config.yaml
+bin/
+coverage.out
+.idea/
+.vscode/
+*.log
+.DS_Store
